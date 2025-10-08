@@ -1,5 +1,6 @@
 # PostgreSQL can have a bloat table (fragmentation) in a insert only table. See below how a rollback can cause this (attention to n_dead_tup column).
-```
+
+  
   # Create a new DB
 db1=# create database db2;
 CREATE DATABASE
@@ -53,7 +54,3 @@ t
  table1  |         2 |         0 |         0 |          1 |          1 |                   1 |                  2 |             |                 |              |                  |            0 |                0 |             0 |
 0
 (1 row)
-
-
-
-```
