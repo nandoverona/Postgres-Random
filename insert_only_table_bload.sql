@@ -127,3 +127,58 @@ db2=# select * from table1;
 (1 row)
 
 db2=#
+  # Vacuum and Analize the table
+db2=# vacuum analyze table1;
+VACUUM
+
+  # Check table stats, see the dead tuple in n_dead_tup again, now it is 0, however n_tup_ins still showing 10001
+db2=# select relname, n_tup_ins, n_tup_upd, n_tup_del, n_live_tup, n_dead_tup, n_mod_since_analyze, n_ins_since_vacuum, last_vacuum, last_autovacuum, last_analyze, last_autoanalyze, vacuum_count, autovacuum_count, analyze_count, autoanalyze_count from pg_stat_all_tables where relname = 'table1';
+ relname | n_tup_ins | n_tup_upd | n_tup_del | n_live_tup | n_dead_tup | n_mod_since_analyze | n_ins_since_vacuum |          last_vacuum          | last_autovacuum |         last_analyze          | last_autoanalyze | vacuum_count | autovacuum_count
+ | analyze_count | autoanalyze_count
+---------+-----------+-----------+-----------+------------+------------+---------------------+--------------------+-------------------------------+-----------------+-------------------------------+------------------+--------------+-----------------
+-+---------------+-------------------
+ table1  |     10001 |         0 |         0 |          1 |          0 |                   0 |                  0 | 2025-10-08 14:19:21.298814+00 |                 | 2025-10-08 14:19:21.298989+00 |                  |            2 |                0
+ |             1 |                 0
+(1 row)
+
+  # Size is almost back to what it supose to be.
+db2=# SELECT
+    pg_size_pretty(pg_relation_size('table1')) as table_size,
+    pg_size_pretty(pg_total_relation_size('table1')) as total_size,
+    pg_relation_size('table1') / 8192 as table_blocks,
+    pg_total_relation_size('table1') / 8192 as total_blocks;
+ table_size | total_size | table_blocks | total_blocks
+------------+------------+--------------+--------------
+ 8192 bytes | 56 kB      |            1 |            7
+(1 row)
+
+  # See how table was after the first insert
+  #  table_size | total_size | table_blocks | total_blocks
+  # ------------+------------+--------------+--------------
+  #  8192 bytes | 24 kB      |            1 |            3
+(1 row)
+db2=#
+
+  # After a vacuum full table get's to it's original size (1 row only)
+db2=# vacuum full table1;
+VACUUM
+
+db2=# select relname, n_tup_ins, n_tup_upd, n_tup_del, n_live_tup, n_dead_tup, n_mod_since_analyze, n_ins_since_vacuum, last_vacuum, last_autovacuum, last_analyze, last_autoanalyze, vacuum_count, autovacuum_count, analyze_count, autoanalyze_count from pg_stat_all_tables where relname = 'table1';
+ relname | n_tup_ins | n_tup_upd | n_tup_del | n_live_tup | n_dead_tup | n_mod_since_analyze | n_ins_since_vacuum |          last_vacuum          | last_autovacuum |         last_analyze          | last_autoanalyze | vacuum_count | autovacuum_count
+ | analyze_count | autoanalyze_count
+---------+-----------+-----------+-----------+------------+------------+---------------------+--------------------+-------------------------------+-----------------+-------------------------------+------------------+--------------+-----------------
+-+---------------+-------------------
+ table1  |     10001 |         0 |         0 |          1 |          0 |                   0 |                  0 | 2025-10-08 14:19:21.298814+00 |                 | 2025-10-08 14:19:21.298989+00 |                  |            2 |                0
+ |             1 |                 0
+(1 row)
+
+db2=# SELECT                                                                                                                                                                                                                                                pg_size_pretty(pg_relation_size('table1')) as table_size,
+    pg_size_pretty(pg_total_relation_size('table1')) as total_size,
+    pg_relation_size('table1') / 8192 as table_blocks,
+    pg_total_relation_size('table1') / 8192 as total_blocks;
+ table_size | total_size | table_blocks | total_blocks
+------------+------------+--------------+--------------
+ 8192 bytes | 24 kB      |            1 |            3
+(1 row)
+
+
